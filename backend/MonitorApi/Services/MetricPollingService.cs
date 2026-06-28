@@ -20,10 +20,8 @@ public class MetricPollingService : BackgroundService
             try
             {
                 using var scope = _services.CreateScope();
-                var cloudWatch = scope.ServiceProvider.GetRequiredService<ICloudWatchService>();
                 var alerts = scope.ServiceProvider.GetRequiredService<IAlertService>();
 
-                await cloudWatch.PollAsync();
                 await alerts.EvaluateAsync();
             }
             catch (Exception ex)

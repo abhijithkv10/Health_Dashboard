@@ -18,7 +18,6 @@ builder.Services.AddDbContextFactory<MonitorDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddSingleton<IMetricStore, MetricStore>();
-builder.Services.AddSingleton<ICloudWatchService, CloudWatchService>();
 builder.Services.AddSingleton<IAlertService, AlertService>();
 builder.Services.AddHostedService<MetricPollingService>();
 
