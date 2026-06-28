@@ -1,0 +1,25 @@
+services:
+  backend:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION:-Host=postgres;Database=aws_monitor;Username=postgres;Password=postgres}
+      Auth__ApiKey: ${MONITOR_API_KEY:-dev-api-key}
+      Auth__JwtSecret: ${JWT_SECRET:-dev-jwt-secret-at-least-32-characters!!}
+      Auth__Google__ClientId: ${VITE_GOOGLE_CLIENT_ID:-}
+      Auth__Google__AllowedDomain: ${GOOGLE_ALLOWED_DOMAIN:-}
+      Aws__Region: ${AWS_REGION:-us-east-1}
+      Aws__SnsTopicArn: ${AWS_SNS_TOPIC_ARN:-}
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
