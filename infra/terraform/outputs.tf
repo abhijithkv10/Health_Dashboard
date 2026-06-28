@@ -22,3 +22,13 @@ output "sns_topic_arn" {
   description = "SNS topic for alerts"
   value       = aws_sns_topic.alerts.arn
 }
+
+output "state_bucket" {
+  description = "S3 bucket for Terraform state"
+  value       = aws_s3_bucket.state.bucket
+}
+
+output "state_lock_table" {
+  description = "DynamoDB table for Terraform state locking"
+  value       = aws_dynamodb_table.state_lock.name
+}

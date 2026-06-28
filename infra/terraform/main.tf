@@ -11,6 +11,42 @@ provider "aws" {
   region = var.aws_region
 }
 
+# ── State Bucket ─────────────────────────────────────────────────────────────
+# Created as a resource first. After `terraform apply`, uncomment the backend
+# block above and run `terraform init -migrate-state` to move state to S3.
+
+resource "aws_s3_bucket" "state" {
+  bucket = "${var.project_name}-terraform-state-${data.aws_caller_identity.current.account_id}"
+}
+
+resource "aws_s3_bucket_versioning" "state" {
+  bucket = aws_s3_bucket.state.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
+  bucket = aws_s3_bucket.state.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_dynamodb_table" "state_lock" {
+  name         = "${var.project_name}-terraform-lock"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
+}
+
+data "aws_caller_identity" "current" {}
+
 # ── VPC ──────────────────────────────────────────────────────────────────────
 
 data "aws_vpc" "selected" {
