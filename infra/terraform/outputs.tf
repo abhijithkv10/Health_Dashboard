@@ -5,7 +5,7 @@ output "dashboard_url" {
 
 output "dashboard_ssh" {
   description = "SSH command to connect"
-  value       = "ssh ec2-user@${aws_eip.dashboard.public_ip}"
+  value       = "ssh ubuntu@${aws_eip.dashboard.public_ip}"
 }
 
 output "db_endpoint" {

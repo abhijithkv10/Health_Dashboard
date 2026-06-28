@@ -3,20 +3,18 @@ set -euo pipefail
 
 exec > /var/log/user_data.log 2>&1
 
-dnf update -y
-dnf install -y docker git jq postgresql15
-
-# Install docker-compose plugin
-dnf install -y docker-compose-plugin
+apt update -y
+apt install -y docker.io docker-compose-v2 git postgresql-client
 
 systemctl enable docker
 systemctl start docker
+usermod -aG docker ubuntu
 
 # Clone the repo
-cd /home/ec2-user
+cd /home/ubuntu
 git clone ${repo_url} ${project_name}
 cd ${project_name}
-chown -R ec2-user:ec2-user .
+chown -R ubuntu:ubuntu .
 
 # Write production config
 cat > .env << ENVFILE

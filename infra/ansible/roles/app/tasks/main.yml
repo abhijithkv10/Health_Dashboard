@@ -1,13 +1,14 @@
 ---
-- name: Install Docker
+- name: Install Docker and dependencies
   become: yes
-  dnf:
+  apt:
     name:
-      - docker
-      - docker-compose-plugin
+      - docker.io
+      - docker-compose-v2
       - git
-      - postgresql15
+      - postgresql-client
     state: present
+    update_cache: yes
 
 - name: Start and enable Docker
   become: yes
@@ -16,10 +17,10 @@
     enabled: yes
     state: started
 
-- name: Add ec2-user to docker group
+- name: Add ubuntu user to docker group
   become: yes
   user:
-    name: ec2-user
+    name: ubuntu
     groups: docker
     append: yes
 
@@ -29,15 +30,14 @@
     dest: "{{ app_dir }}"
     version: main
     force: yes
-  become_user: ec2-user
-  register: repo_clone
+  become_user: ubuntu
 
 - name: Write .env file
   become: yes
   copy:
     dest: "{{ app_dir }}/.env"
-    owner: ec2-user
-    group: ec2-user
+    owner: ubuntu
+    group: ubuntu
     mode: '0600'
     content: |
       DB_CONNECTION=Host={{ db_host }};Database={{ db_name }};Username={{ db_username }};Password={{ db_password }}

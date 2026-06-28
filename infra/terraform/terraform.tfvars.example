@@ -1,6 +1,6 @@
 aws_region        = "us-east-1"
 project_name      = "aws-monitor"
-ami_id            = "ami-0abcdef1234567890"  # Amazon Linux 2023
+ami_id            = "ami-0e86e20dae9224db8"  # Ubuntu 24.04 LTS (us-east-1)
 
 db_username       = "monitor_app"
 db_password       = "YourStrongPassword123!"

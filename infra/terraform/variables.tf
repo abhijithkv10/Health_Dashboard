@@ -17,7 +17,7 @@ variable "vpc_id" {
 }
 
 variable "ami_id" {
-  description = "AMI ID for EC2 (Amazon Linux 2023)"
+  description = "AMI ID for EC2 (Ubuntu 24.04 LTS)"
   type        = string
 }
 
