@@ -1,0 +1,16 @@
+[Unit]
+Description=AWS Monitor .NET API
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/monitor/backend
+ExecStart=/usr/bin/dotnet /opt/monitor/backend/publish/MonitorApi.dll
+Restart=always
+RestartSec=10
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
+Environment=ASPNETCORE_ENVIRONMENT=Production
+
+[Install]
+WantedBy=multi-user.target

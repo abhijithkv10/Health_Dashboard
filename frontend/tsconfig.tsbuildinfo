@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/api.ts","./src/main.tsx","./src/types.ts","./src/components/MetricGauge.tsx","./src/components/ServerCard.tsx","./src/components/StatusBadge.tsx","./src/pages/Dashboard.tsx","./src/pages/ServerDetail.tsx"],"version":"5.9.3"}

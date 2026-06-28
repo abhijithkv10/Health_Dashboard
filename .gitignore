@@ -1,0 +1,12 @@
+bin/
+obj/
+node_modules/
+dist/
+*.user
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
