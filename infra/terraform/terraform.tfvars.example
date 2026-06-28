@@ -1,6 +1,6 @@
-aws_region        = "us-east-1"
+aws_region        = "ap-south-1"
 project_name      = "aws-monitor"
-ami_id            = "ami-0e86e20dae9224db8"  # Ubuntu 24.04 LTS (us-east-1)
+ami_id            = "ami-001e7cc215773c7fb"  # Ubuntu 24.04 LTS
 
 db_username       = "monitor_app"
 db_password       = "YourStrongPassword123!"
