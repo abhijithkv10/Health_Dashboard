@@ -1,5 +1,8 @@
+using System.Text;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using MonitorApi.Data;
 using MonitorApi.Middleware;
 using MonitorApi.Services;
@@ -18,8 +21,27 @@ builder.Services.AddDbContextFactory<MonitorDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddSingleton<IMetricStore, MetricStore>();
+builder.Services.AddSingleton<IInstanceService, InstanceService>();
+builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IAlertService, AlertService>();
 builder.Services.AddHostedService<MetricPollingService>();
+
+var jwtSecret = builder.Configuration["Auth:JwtSecret"] ?? "CHANGE_ME_TO_A_RANDOM_SECRET_32CHARS!";
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "aws-monitor",
+            ValidAudience = "aws-monitor",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+        };
+    });
+builder.Services.AddAuthorization();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -59,6 +81,8 @@ if (app.Environment.IsDevelopment())
 app.UseHealthChecks("/api/health");
 app.UseMiddleware<ApiKeyAuthMiddleware>();
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
 app.Run();

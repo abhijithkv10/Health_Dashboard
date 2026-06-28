@@ -8,7 +8,7 @@ namespace MonitorApi.Services;
 public class AlertService : IAlertService
 {
     private readonly IMetricStore _store;
-    private readonly IConfiguration _config;
+    private readonly IInstanceService _instances;
     private readonly ILogger<AlertService> _logger;
     private readonly AmazonSimpleNotificationServiceClient _snsClient;
     private readonly string? _snsTopicArn;
@@ -22,10 +22,10 @@ public class AlertService : IAlertService
     private readonly double _memoryWarning;
     private readonly double _diskWarning;
 
-    public AlertService(IMetricStore store, IConfiguration config, ILogger<AlertService> logger)
+    public AlertService(IMetricStore store, IInstanceService instances, IConfiguration config, ILogger<AlertService> logger)
     {
         _store = store;
-        _config = config;
+        _instances = instances;
         _logger = logger;
 
         _cpuCritical = double.Parse(config["Monitoring:CpuCriticalThreshold"] ?? "80");
@@ -52,11 +52,11 @@ public class AlertService : IAlertService
     public async Task EvaluateAsync()
     {
         var instanceIds = await _store.GetAllInstanceIdsAsync();
-        var configuredInstances = _config.GetSection("Instances").Get<List<InstanceConfig>>() ?? new();
+        var configuredInstances = await _instances.GetAllAsync();
 
         foreach (var instanceId in instanceIds)
         {
-            var config = configuredInstances.FirstOrDefault(c => c.Id == instanceId);
+            var config = configuredInstances.FirstOrDefault(c => c.InstanceId == instanceId);
             var name = config?.Name ?? instanceId;
             var metrics = await _store.GetMetricsAsync(instanceId, _cpuDurationMinutes);
             var latest = metrics.LastOrDefault();

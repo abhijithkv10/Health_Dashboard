@@ -9,36 +9,39 @@ namespace MonitorApi.Controllers;
 public class InstancesController : ControllerBase
 {
     private readonly IMetricStore _store;
-    private readonly IConfiguration _config;
+    private readonly IInstanceService _instances;
 
-    public InstancesController(IMetricStore store, IConfiguration config)
+    public InstancesController(IMetricStore store, IInstanceService instances)
     {
         _store = store;
-        _config = config;
+        _instances = instances;
     }
 
     [HttpGet]
     public async Task<ActionResult<List<InstanceStatus>>> GetAll()
     {
-        var configuredInstances = _config.GetSection("Instances").Get<List<InstanceConfig>>() ?? new();
+        var configuredInstances = await _instances.GetAllAsync();
         var result = new List<InstanceStatus>();
 
         foreach (var instance in configuredInstances)
         {
-            var latest = await _store.GetLatestAsync(instance.Id);
+            var latest = await _store.GetLatestAsync(instance.InstanceId);
             var status = EvaluateStatus(instance, latest);
             result.Add(status);
         }
 
+        var knownIds = configuredInstances.Select(c => c.InstanceId).ToHashSet();
         var unconfiguredIds = await _store.GetAllInstanceIdsAsync();
-        var unconfigured = unconfiguredIds
-            .Where(id => !configuredInstances.Any(c => c.Id == id))
-            .ToList();
 
-        foreach (var id in unconfigured)
+        foreach (var id in unconfiguredIds.Where(id => !knownIds.Contains(id)))
         {
             var latest = await _store.GetLatestAsync(id);
-            result.Add(EvaluateStatus(new InstanceConfig { Id = id, Name = id }, latest));
+            result.Add(EvaluateStatus(new InstanceConfig
+            {
+                InstanceId = id,
+                Name = id,
+                Region = "us-east-1"
+            }, latest));
         }
 
         return result;
@@ -48,7 +51,7 @@ public class InstancesController : ControllerBase
     {
         var status = new InstanceStatus
         {
-            InstanceId = config.Id,
+            InstanceId = config.InstanceId,
             Name = config.Name,
             LastUpdated = latest?.Timestamp ?? DateTime.MinValue
         };
@@ -61,7 +64,6 @@ public class InstancesController : ControllerBase
 
         var alerts = new List<string>();
 
-        // CPU evaluation (checked against latest - AlertService handles duration)
         if (latest.CpuPercent > 80)
         {
             status.CpuStatus = "Critical";
