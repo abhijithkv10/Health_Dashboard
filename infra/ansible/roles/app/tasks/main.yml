@@ -1,0 +1,165 @@
+---
+- name: Install system packages
+  become: yes
+  dnf:
+    name:
+      - git
+      - jq
+      - postgresql15
+      - dotnet-sdk-8.0
+      - nginx
+    state: present
+
+- name: Enable Node.js 20 module
+  become: yes
+  command: dnf module enable -y nodejs:20
+  args:
+    creates: /usr/bin/node
+
+- name: Install Node.js
+  become: yes
+  dnf:
+    name: nodejs
+    state: present
+
+- name: Ensure ec2-user home exists
+  file:
+    path: /home/ec2-user
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+
+- name: Clone application repo
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ app_dir }}"
+    version: main
+    force: yes
+  become_user: ec2-user
+
+- name: Create production config directory
+  file:
+    path: "{{ app_dir }}/backend/MonitorApi"
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+
+- name: Write appsettings.Production.json
+  become: yes
+  copy:
+    dest: "{{ app_dir }}/backend/MonitorApi/appsettings.Production.json"
+    owner: ec2-user
+    group: ec2-user
+    mode: '0600'
+    content: |
+      {
+        "Logging": {
+          "LogLevel": {
+            "Default": "Information",
+            "Microsoft.AspNetCore": "Warning"
+          }
+        },
+        "ConnectionStrings": {
+          "DefaultConnection": "Host={{ db_host }};Database={{ db_name }};Username={{ db_username }};Password={{ db_password }}"
+        },
+        "Auth": {
+          "ApiKey": "{{ monitor_api_key }}",
+          "JwtSecret": "{{ jwt_secret }}",
+          "Google": {
+            "ClientId": "{{ google_client_id }}",
+            "AllowedDomain": "{{ google_allowed_domain }}"
+          }
+        },
+        "Aws": {
+          "Region": "{{ aws_region }}",
+          "SnsTopicArn": "{{ sns_topic_arn }}"
+        },
+        "Monitoring": {
+          "CpuCriticalThreshold": 80,
+          "CpuCriticalDurationMinutes": 3,
+          "CpuWarningThreshold": 60,
+          "MemoryCriticalThreshold": 80,
+          "MemoryWarningThreshold": 70,
+          "DiskCriticalThreshold": 90,
+          "DiskWarningThreshold": 80,
+          "PollingIntervalSeconds": 60
+        }
+      }
+
+- name: Create database
+  become: yes
+  environment:
+    PGPASSWORD: "{{ db_password }}"
+  postgresql_db:
+    name: "{{ db_name }}"
+    login_host: "{{ db_host }}"
+    login_user: "{{ db_username }}"
+    login_password: "{{ db_password }}"
+    state: present
+  ignore_errors: yes
+
+- name: Build backend
+  become_user: ec2-user
+  command:
+    cmd: dotnet publish -c Release -o {{ backend_publish_dir }}
+    chdir: "{{ app_dir }}/backend/MonitorApi"
+
+- name: Install frontend dependencies
+  become_user: ec2-user
+  command:
+    cmd: npm ci
+    chdir: "{{ app_dir }}/frontend"
+
+- name: Build frontend
+  become_user: ec2-user
+  command:
+    cmd: npm run build
+    chdir: "{{ app_dir }}/frontend"
+
+- name: Copy frontend dist
+  become: yes
+  copy:
+    src: "{{ app_dir }}/frontend/dist/"
+    dest: "{{ frontend_dist_dir }}/"
+    remote_src: yes
+    owner: ec2-user
+    group: ec2-user
+
+- name: Create backend directory
+  become: yes
+  file:
+    path: /opt/monitor/backend
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+
+- name: Deploy systemd unit
+  become: yes
+  template:
+    src: monitor-api.service.j2
+    dest: /etc/systemd/system/monitor-api.service
+    mode: '0644'
+  notify: restart monitor-api
+
+- name: Deploy nginx config
+  become: yes
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/conf.d/monitor.conf
+    mode: '0644'
+  notify: restart nginx
+
+- name: Enable and start monitor-api
+  become: yes
+  systemd:
+    name: monitor-api
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: Enable and start nginx
+  become: yes
+  systemd:
+    name: nginx
+    enabled: yes
+    state: started

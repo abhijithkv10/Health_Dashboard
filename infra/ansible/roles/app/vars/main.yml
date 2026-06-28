@@ -1,0 +1,5 @@
+---
+dotnet_version: "8.0"
+nodejs_version: "20"
+nginx_service: nginx
+monitor_service: monitor-api

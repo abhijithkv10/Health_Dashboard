@@ -1,0 +1,20 @@
+---
+- name: Deploy AWS Monitor
+  hosts: dashboard
+  gather_facts: yes
+  become: yes
+
+  roles:
+    - app
+
+  handlers:
+    - name: restart monitor-api
+      systemd:
+        name: monitor-api
+        state: restarted
+        daemon_reload: yes
+
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
