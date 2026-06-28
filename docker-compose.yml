@@ -6,7 +6,7 @@ services:
     network_mode: host
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
-      ConnectionStrings__DefaultConnection: ${DB_CONNECTION:-Host=postgres;Database=aws_monitor;Username=postgres;Password=postgres}
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION:-Host=postgres;Database=aws_monitor;Username=postgres;Password=postgres;SSL Mode=Require}
       Auth__ApiKey: ${MONITOR_API_KEY:-dev-api-key}
       Auth__JwtSecret: ${JWT_SECRET:-dev-jwt-secret-at-least-32-characters!!}
       Auth__Google__ClientId: ${VITE_GOOGLE_CLIENT_ID:-}

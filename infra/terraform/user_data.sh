@@ -26,7 +26,7 @@ chown -R ubuntu:ubuntu .
 # Write production config
 cat > .env << ENVFILE
 ASPNETCORE_ENVIRONMENT=Production
-ConnectionStrings__DefaultConnection=Host=${db_host};Database=${db_name};Username=${db_username};Password=${db_password}
+ConnectionStrings__DefaultConnection=Host=${db_host};Database=${db_name};Username=${db_username};Password=${db_password};SSL Mode=Require
 Auth__ApiKey=${api_key}
 Auth__JwtSecret=${jwt_secret}
 Auth__Google__ClientId=${google_client_id}
