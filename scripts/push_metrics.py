@@ -26,6 +26,24 @@ def get_instance_id():
         pass
 
     try:
+        token = subprocess.run(
+            ["curl", "-s", "-X", "PUT", "http://169.254.169.254/latest/api/token",
+             "-H", "X-aws-ec2-metadata-token-ttl-seconds: 21600"],
+            capture_output=True, text=True, timeout=5
+        ).stdout.strip()
+
+        if token:
+            result = subprocess.run(
+                ["curl", "-s", "-H", f"X-aws-ec2-metadata-token: {token}",
+                 "http://169.254.169.254/latest/meta-data/instance-id"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+    except Exception:
+        pass
+
+    try:
         result = subprocess.run(
             ["curl", "-s", "http://169.254.169.254/latest/meta-data/instance-id"],
             capture_output=True, text=True, timeout=5
