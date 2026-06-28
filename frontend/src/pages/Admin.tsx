@@ -59,7 +59,7 @@ export default function Admin() {
         <div className="flex items-center gap-4">
           {user && (
             <div className="flex items-center gap-2 text-sm text-gray-400">
-              <img src={user.picture} alt="" className="w-6 h-6 rounded-full" />
+              {user.picture && <img src={user.picture} alt="" className="w-6 h-6 rounded-full" />}
               {user.email}
             </div>
           )}

@@ -1,4 +1,3 @@
-using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
 using MonitorApi.Services;
 
@@ -17,45 +16,25 @@ public class AuthController : ControllerBase
         _config = config;
     }
 
-    public record GoogleLoginRequest(string IdToken);
+    public record LoginRequest(string Username, string Password);
 
-    [HttpPost("google")]
-    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    [HttpPost("login")]
+    public IActionResult Login([FromBody] LoginRequest request)
     {
-        try
+        var adminUsername = _config["Auth:Admin:Username"] ?? "admin";
+        var adminPassword = _config["Auth:Admin:Password"] ?? "admin";
+
+        if (request.Username != adminUsername || request.Password != adminPassword)
+            return Unauthorized(new { error = "Invalid username or password" });
+
+        var token = _jwt.GenerateToken(request.Username, request.Username, "");
+
+        return Ok(new
         {
-            var settings = new GoogleJsonWebSignature.ValidationSettings
-            {
-                Audience = new[] { _config["Auth:Google:ClientId"] ?? "" }
-            };
-
-            var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
-
-            var allowedDomain = _config["Auth:Google:AllowedDomain"];
-            if (!string.IsNullOrEmpty(allowedDomain))
-            {
-                var emailDomain = payload.Email?.Split('@').LastOrDefault();
-                if (emailDomain == null || !emailDomain.Equals(allowedDomain, StringComparison.OrdinalIgnoreCase))
-                    return Unauthorized(new { error = $"Email must be from @{allowedDomain} domain" });
-            }
-
-            var token = _jwt.GenerateToken(
-                payload.Email ?? "unknown",
-                payload.Name ?? "unknown",
-                payload.Picture ?? ""
-            );
-
-            return Ok(new
-            {
-                token,
-                email = payload.Email,
-                name = payload.Name,
-                picture = payload.Picture
-            });
-        }
-        catch (InvalidJwtException)
-        {
-            return Unauthorized(new { error = "Invalid Google token" });
-        }
+            token,
+            email = request.Username,
+            name = request.Username,
+            picture = ""
+        });
     }
 }

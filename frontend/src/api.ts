@@ -21,8 +21,8 @@ export async function fetchMetrics(instanceId: string, minutes = 60): Promise<Me
   return data
 }
 
-export async function googleLogin(idToken: string) {
-  const { data } = await api.post('/auth/google', { idToken })
+export async function adminLogin(username: string, password: string) {
+  const { data } = await api.post('/auth/login', { username, password })
   return data as { token: string; email: string; name: string; picture: string }
 }
 
