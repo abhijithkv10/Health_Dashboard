@@ -4,8 +4,7 @@ services:
       context: backend
       dockerfile: Dockerfile
     dns:
-      - 8.8.8.8
-      - 8.8.4.4
+      - 169.254.169.253
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__DefaultConnection: ${DB_CONNECTION:-Host=postgres;Database=aws_monitor;Username=postgres;Password=postgres;SSL Mode=Require}
