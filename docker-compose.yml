@@ -3,7 +3,9 @@ services:
     build:
       context: backend
       dockerfile: Dockerfile
-    network_mode: host
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__DefaultConnection: ${DB_CONNECTION:-Host=postgres;Database=aws_monitor;Username=postgres;Password=postgres;SSL Mode=Require}
@@ -13,11 +15,14 @@ services:
       Auth__Google__AllowedDomain: ${GOOGLE_ALLOWED_DOMAIN:-}
       Aws__Region: ${AWS_REGION:-us-east-1}
       Aws__SnsTopicArn: ${AWS_SNS_TOPIC_ARN:-}
+    ports:
+      - "5000:5000"
 
   frontend:
     build:
       context: frontend
       dockerfile: Dockerfile
-    network_mode: host
+    ports:
+      - "80:80"
     depends_on:
       - backend
