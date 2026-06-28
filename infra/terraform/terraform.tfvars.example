@@ -11,3 +11,4 @@ google_client_id       = "123456789-xxxxx.apps.googleusercontent.com"
 google_allowed_domain  = "yourcompany.com"
 
 repo_url          = "https://github.com/abhijithkv10/Health_Dashboard.git"
+key_name          = "your-ec2-key-pair"

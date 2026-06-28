@@ -79,6 +79,11 @@ variable "repo_url" {
   type        = string
 }
 
+variable "key_name" {
+  description = "EC2 key pair name for SSH access"
+  type        = string
+}
+
 variable "ssh_allowed_cidrs" {
   description = "CIDR blocks allowed for SSH access"
   type        = list(string)

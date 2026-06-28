@@ -32,3 +32,8 @@ output "state_lock_table" {
   description = "DynamoDB table for Terraform state locking"
   value       = aws_dynamodb_table.state_lock.name
 }
+
+output "ec2_instance_id" {
+  description = "EC2 instance ID"
+  value       = aws_instance.dashboard.id
+}
