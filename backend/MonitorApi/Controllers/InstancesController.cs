@@ -18,25 +18,26 @@ public class InstancesController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<List<InstanceStatus>> GetAll()
+    public async Task<ActionResult<List<InstanceStatus>>> GetAll()
     {
         var configuredInstances = _config.GetSection("Instances").Get<List<InstanceConfig>>() ?? new();
         var result = new List<InstanceStatus>();
 
         foreach (var instance in configuredInstances)
         {
-            var latest = _store.GetLatest(instance.Id);
+            var latest = await _store.GetLatestAsync(instance.Id);
             var status = EvaluateStatus(instance, latest);
             result.Add(status);
         }
 
-        var unconfigured = _store.GetAllInstanceIds()
+        var unconfiguredIds = await _store.GetAllInstanceIdsAsync();
+        var unconfigured = unconfiguredIds
             .Where(id => !configuredInstances.Any(c => c.Id == id))
             .ToList();
 
         foreach (var id in unconfigured)
         {
-            var latest = _store.GetLatest(id);
+            var latest = await _store.GetLatestAsync(id);
             result.Add(EvaluateStatus(new InstanceConfig { Id = id, Name = id }, latest));
         }
 

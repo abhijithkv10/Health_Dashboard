@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 EC2 Monitoring Script
-Sends memory and disk metrics to the .NET API every minute.
+Sends CPU, memory and disk metrics to the .NET API every minute.
 Install: sudo cp push_metrics.py /opt/scripts/ && sudo chmod +x /opt/scripts/push_metrics.py
 Add cron: * * * * * /opt/scripts/push_metrics.py
 """
@@ -9,24 +9,70 @@ Add cron: * * * * * /opt/scripts/push_metrics.py
 import json
 import os
 import subprocess
-import sys
+import time
 import urllib.request
 import urllib.error
 
-# Configure these
-API_URL = "http://<api-server-ip>:5000/api/metrics/push"
+# Configure these via environment variables or edit directly
+API_URL = os.environ.get("MONITOR_API_URL", "http://localhost:5000/api/metrics/push")
+API_KEY = os.environ.get("MONITOR_API_KEY", "")
 
-try:
-    with open("/var/lib/cloud/data/instance-id") as f:
-        INSTANCE_ID = f.read().strip()
-except FileNotFoundError:
+
+def get_instance_id():
     try:
-        import requests
-        resp = requests.get("http://169.254.169.254/latest/meta-data/instance-id",
-                            timeout=5)
-        INSTANCE_ID = resp.text.strip()
+        with open("/var/lib/cloud/data/instance-id") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        pass
+
+    try:
+        result = subprocess.run(
+            ["curl", "-s", "http://169.254.169.254/latest/meta-data/instance-id"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
     except Exception:
-        INSTANCE_ID = os.uname().nodem
+        pass
+
+    return os.uname().nodename
+
+
+def get_cpu():
+    try:
+        with open("/proc/stat") as f:
+            line = f.readline()
+        parts = line.split()
+        if len(parts) < 5:
+            return None
+        user = int(parts[1])
+        nice = int(parts[2])
+        system = int(parts[3])
+        idle = int(parts[4])
+        total1 = user + nice + system + idle
+        idle1 = idle
+
+        time.sleep(0.5)
+
+        with open("/proc/stat") as f:
+            line = f.readline()
+        parts = line.split()
+        user = int(parts[1])
+        nice = int(parts[2])
+        system = int(parts[3])
+        idle = int(parts[4])
+        total2 = user + nice + system + idle
+        idle2 = idle
+
+        total_delta = total2 - total1
+        idle_delta = idle2 - idle1
+        if total_delta == 0:
+            return None
+        return round((1 - idle_delta / total_delta) * 100, 1)
+    except Exception:
+        return None
+
+
 def get_memory():
     with open("/proc/meminfo") as f:
         data = f.read()
@@ -59,28 +105,39 @@ def get_disk():
 
 
 def main():
+    instance_id = get_instance_id()
+    cpu = get_cpu()
     memory = get_memory()
     disk = get_disk()
 
-    payload = json.dumps({
-        "instanceId": INSTANCE_ID,
+    payload = {
+        "instanceId": instance_id,
+        "cpuPercent": cpu,
         "memoryPercent": memory,
         "diskPercent": disk
-    }).encode("utf-8")
+    }
+
+    body = json.dumps(payload).encode("utf-8")
+
+    headers = {"Content-Type": "application/json"}
+    if API_KEY:
+        headers["X-API-Key"] = API_KEY
 
     req = urllib.request.Request(
         API_URL,
-        data=payload,
-        headers={"Content-Type": "application/json"},
+        data=body,
+        headers=headers,
         method="POST"
     )
 
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             if resp.status == 200:
-                print(f"OK | Memory: {memory}% | Disk: {disk}%")
+                print(f"OK | CPU: {cpu}% | Memory: {memory}% | Disk: {disk}%")
             else:
                 print(f"FAIL | HTTP {resp.status}")
+    except urllib.error.HTTPError as e:
+        print(f"FAIL | HTTP {e.code}: {e.reason}")
     except urllib.error.URLError as e:
         print(f"FAIL | {e.reason}")
 

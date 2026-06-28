@@ -16,10 +16,10 @@ public class MetricsController : ControllerBase
     }
 
     [HttpGet("{instanceId}")]
-    public ActionResult<object> Get(string instanceId, [FromQuery] int minutes = 60)
+    public async Task<ActionResult<object>> Get(string instanceId, [FromQuery] int minutes = 60)
     {
-        var metrics = _store.GetMetrics(instanceId, minutes);
-        var latest = _store.GetLatest(instanceId);
+        var metrics = await _store.GetMetricsAsync(instanceId, minutes);
+        var latest = await _store.GetLatestAsync(instanceId);
 
         return new
         {
@@ -31,14 +31,13 @@ public class MetricsController : ControllerBase
     }
 
     [HttpPost("push")]
-    public IActionResult Push([FromBody] PushMetricRequest request)
+    public async Task<IActionResult> Push([FromBody] PushMetricRequest request)
     {
-        var latest = _store.GetLatest(request.InstanceId);
-        _store.AddMetric(new MetricSnapshot
+        await _store.AddMetricAsync(new MetricSnapshot
         {
             InstanceId = request.InstanceId,
             Timestamp = DateTime.UtcNow,
-            CpuPercent = latest?.CpuPercent,
+            CpuPercent = request.CpuPercent,
             MemoryPercent = request.MemoryPercent,
             DiskPercent = request.DiskPercent
         });

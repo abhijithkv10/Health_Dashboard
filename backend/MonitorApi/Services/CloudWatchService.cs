@@ -46,8 +46,8 @@ public class CloudWatchService : ICloudWatchService
                 var datapoint = response.Datapoints.OrderByDescending(d => d.Timestamp).FirstOrDefault();
                 if (datapoint != null)
                 {
-                    var latest = _store.GetLatest(instance.Id);
-                    _store.AddMetric(new MetricSnapshot
+                    var latest = await _store.GetLatestAsync(instance.Id);
+                    await _store.AddMetricAsync(new MetricSnapshot
                     {
                         InstanceId = instance.Id,
                         Timestamp = DateTime.UtcNow,

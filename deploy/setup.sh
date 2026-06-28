@@ -9,6 +9,9 @@ sudo dnf install -y dotnet-sdk-8.0
 echo "=== Installing Nginx ==="
 sudo dnf install -y nginx
 
+echo "=== Installing PostgreSQL client ==="
+sudo dnf install -y postgresql15
+
 echo "=== Building Backend ==="
 cd /home/ec2-user/aws-monitor/backend/MonitorApi
 dotnet publish -c Release -o /opt/monitor/backend/publish

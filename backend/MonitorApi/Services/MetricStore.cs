@@ -1,50 +1,50 @@
-using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
+using MonitorApi.Data;
 using MonitorApi.Models;
 
 namespace MonitorApi.Services;
 
 public class MetricStore : IMetricStore
 {
-    private readonly ConcurrentDictionary<string, List<MetricSnapshot>> _metrics = new();
-    private readonly object _lock = new();
+    private readonly IDbContextFactory<MonitorDbContext> _contextFactory;
 
-    public void AddMetric(MetricSnapshot snapshot)
+    public MetricStore(IDbContextFactory<MonitorDbContext> contextFactory)
     {
-        var list = _metrics.GetOrAdd(snapshot.InstanceId, _ => new List<MetricSnapshot>());
-
-        lock (_lock)
-        {
-            list.Add(snapshot);
-            var cutoff = DateTime.UtcNow.AddMinutes(-60);
-            list.RemoveAll(m => m.Timestamp < cutoff);
-        }
+        _contextFactory = contextFactory;
     }
 
-    public List<MetricSnapshot> GetMetrics(string instanceId, int minutes = 60)
+    public async Task AddMetricAsync(MetricSnapshot snapshot)
     {
-        if (!_metrics.TryGetValue(instanceId, out var list))
-            return new List<MetricSnapshot>();
-
-        lock (_lock)
-        {
-            var cutoff = DateTime.UtcNow.AddMinutes(-minutes);
-            return list.Where(m => m.Timestamp >= cutoff).OrderBy(m => m.Timestamp).ToList();
-        }
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        db.Metrics.Add(snapshot);
+        await db.SaveChangesAsync();
     }
 
-    public MetricSnapshot? GetLatest(string instanceId)
+    public async Task<List<MetricSnapshot>> GetMetricsAsync(string instanceId, int minutes = 60)
     {
-        if (!_metrics.TryGetValue(instanceId, out var list))
-            return null;
-
-        lock (_lock)
-        {
-            return list.OrderByDescending(m => m.Timestamp).FirstOrDefault();
-        }
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        var cutoff = DateTime.UtcNow.AddMinutes(-minutes);
+        return await db.Metrics
+            .Where(m => m.InstanceId == instanceId && m.Timestamp >= cutoff)
+            .OrderBy(m => m.Timestamp)
+            .ToListAsync();
     }
 
-    public List<string> GetAllInstanceIds()
+    public async Task<MetricSnapshot?> GetLatestAsync(string instanceId)
     {
-        return _metrics.Keys.ToList();
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.Metrics
+            .Where(m => m.InstanceId == instanceId)
+            .OrderByDescending(m => m.Timestamp)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<List<string>> GetAllInstanceIdsAsync()
+    {
+        await using var db = await _contextFactory.CreateDbContextAsync();
+        return await db.Metrics
+            .Select(m => m.InstanceId)
+            .Distinct()
+            .ToListAsync();
     }
 }

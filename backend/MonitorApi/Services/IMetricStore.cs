@@ -4,8 +4,8 @@ namespace MonitorApi.Services;
 
 public interface IMetricStore
 {
-    void AddMetric(MetricSnapshot snapshot);
-    List<MetricSnapshot> GetMetrics(string instanceId, int minutes = 60);
-    MetricSnapshot? GetLatest(string instanceId);
-    List<string> GetAllInstanceIds();
+    Task AddMetricAsync(MetricSnapshot snapshot);
+    Task<List<MetricSnapshot>> GetMetricsAsync(string instanceId, int minutes = 60);
+    Task<MetricSnapshot?> GetLatestAsync(string instanceId);
+    Task<List<string>> GetAllInstanceIdsAsync();
 }

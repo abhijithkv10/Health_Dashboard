@@ -51,14 +51,14 @@ public class AlertService : IAlertService
 
     public async Task EvaluateAsync()
     {
-        var instanceIds = _store.GetAllInstanceIds();
+        var instanceIds = await _store.GetAllInstanceIdsAsync();
         var configuredInstances = _config.GetSection("Instances").Get<List<InstanceConfig>>() ?? new();
 
         foreach (var instanceId in instanceIds)
         {
             var config = configuredInstances.FirstOrDefault(c => c.Id == instanceId);
             var name = config?.Name ?? instanceId;
-            var metrics = _store.GetMetrics(instanceId, _cpuDurationMinutes);
+            var metrics = await _store.GetMetricsAsync(instanceId, _cpuDurationMinutes);
             var latest = metrics.LastOrDefault();
             if (latest == null) continue;
 
