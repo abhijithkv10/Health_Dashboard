@@ -185,20 +185,4 @@ resource "aws_eip" "dashboard" {
   instance   = aws_instance.dashboard.id
 }
 
-# ── Outputs ──────────────────────────────────────────────────────────────────
 
-output "dashboard_url" {
-  value = "http://${aws_eip.dashboard.public_ip}"
-}
-
-output "db_endpoint" {
-  value = aws_db_instance.postgres.address
-}
-
-output "sns_topic_arn" {
-  value = aws_sns_topic.alerts.arn
-}
-
-output "ec2_instance_id" {
-  value = aws_instance.dashboard.id
-}
