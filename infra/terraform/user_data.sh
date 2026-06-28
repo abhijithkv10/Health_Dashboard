@@ -3,20 +3,8 @@ set -euo pipefail
 
 exec > /var/log/user_data.log 2>&1
 
-export DEBIAN_FRONTEND=noninteractive
-
 dnf update -y
-dnf install -y git jq postgresql15
-
-# Install .NET 8 SDK
-dnf install -y dotnet-sdk-8.0
-
-# Install Node.js 20
-dnf module enable -y nodejs:20
-dnf install -y nodejs
-
-# Install Nginx
-dnf install -y nginx
+dnf install -y git jq postgresql15 nodejs nginx dotnet-sdk-8.0
 
 # Clone the repo
 cd /home/ec2-user
