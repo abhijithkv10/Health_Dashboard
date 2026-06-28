@@ -20,5 +20,7 @@ services:
       context: frontend
       dockerfile: Dockerfile
     network_mode: host
+    volumes:
+      - /etc/nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
